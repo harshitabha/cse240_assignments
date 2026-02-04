@@ -18,6 +18,8 @@ import utils
 
 import inspect
 
+import traceback
+
 class Assignment2(autograder.assignment.Assignment):
     def __init__(self, **kwargs):
         super().__init__(questions = [
@@ -55,6 +57,7 @@ class Q1(autograder.question.Question):
                     msg += "not passed"
                 self.add_message(msg)
         except:
+            print(traceback.format_exc())
             self.add_message("Exception thrown during testing")
 
 class Q2(autograder.question.Question):
