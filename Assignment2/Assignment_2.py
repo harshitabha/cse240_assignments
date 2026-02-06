@@ -61,7 +61,8 @@ Determine the min value of the node
 def min_value(board: chess.Board, evaluation, player: bool, ply: int, alpha, beta) -> tuple[float, chess.Move]:
     min_val = float('inf')
     min_move = None
-    for move in board.legal_moves:
+    ordered = order_moves(board)
+    for move in ordered:
         board.push(move)
         node_val, node_move = value(board, evaluation, not player, ply - 1, alpha, beta)
         board.pop()
@@ -85,18 +86,37 @@ Order the moves in terms of
 '''
 def order_moves(board: chess.Board):
     check_moves = []
-    capture_moves = []
+    capture_moves = {}
     other_moves = []
+    capture_vals = [
+        [20, 25, 25, 30, 40, 50], # pawn
+        [15, 20, 20, 25, 35, 45], # bishop & knight
+        [10, 15, 15, 20, 25, 35], # rook
+        [0, 5, 10, 10, 15, 20, 30], # queen
+        [1, 5, 10, 10, 15, 30, 40], # king
+    ]
+    piece_enum = {
+        chess.PAWN: 0,
+        chess.BISHOP: 1,
+        chess.KNIGHT: 1,
+        chess.ROOK: 2,
+        chess.QUEEN: 3,
+        chess.KING: 4,
+    }
+
     for move in board.legal_moves:
         if board.gives_check(move):
             check_moves.append(move)
         elif board.is_capture(move):
-            capture_moves.append(move)
+            from_sq = move.from_square
+            piece_attacking = piece_enum[board.piece_at(from_sq).piece_type]
+            to_sq = move.to_square
+            captured_piece = piece_enum[board.piece_at(to_sq).piece_type]
+            capture_moves[move] = capture_vals[piece_attacking][captured_piece]
         else:
             other_moves.append(move)
-    return [*check_moves, *capture_moves, *other_moves]
-
-
+    captured_moves_list = dict(sorted(capture_moves.items(), key=lambda item: item[1])).keys()
+    return [*check_moves, *captured_moves_list, *other_moves]
 
 def get_position_score(board: chess.Board, player: bool):   
     """
@@ -192,6 +212,6 @@ case_name, case_board, case_depth, case_ans, case_pts = ("Puzzle 2 Visible", che
 student_ans = utils.testAdvSearch(get_minimax_move, get_position_score, case_board, case_depth)
 print(f'Q4: Student move: {student_ans} \tExpected Move: {case_ans}')
 
-case_name, case_board, case_depth, case_ans, case_pts = ("Puzzle 3 Visible", chess.Board("1k6/2b2p2/2p1p3/1pP2p2/1P1P1P2/8/2N1P3/1K6"), 1, "e2e3", 10)
-student_ans = utils.testAdvSearch(get_minimax_move, get_position_score, case_board, case_depth)
-print(f'Q5: Student move: {student_ans} \tExpected Move: {case_ans}')
+# case_name, case_board, case_depth, case_ans, case_pts = ("Puzzle 3 Visible", chess.Board("1k6/2b2p2/2p1p3/1pP2p2/1P1P1P2/8/2N1P3/1K6"), 1, "e2e3", 10)
+# student_ans = utils.testAdvSearch(get_minimax_move, get_position_score, case_board, case_depth)
+# print(f'Q5: Student move: {student_ans} \tExpected Move: {case_ans}')
