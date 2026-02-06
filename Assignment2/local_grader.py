@@ -57,7 +57,6 @@ class Q1(autograder.question.Question):
                     msg += "not passed"
                 self.add_message(msg)
         except:
-            print(traceback.format_exc())
             self.add_message("Exception thrown during testing")
 
 class Q2(autograder.question.Question):
@@ -122,6 +121,7 @@ class Q3(autograder.question.Question):
                 self.add_message(msg)
                 
         except:
+            print(traceback.format_exc())
             self.add_message("Exception thrown during testing")
 
 class Q4(autograder.question.Question):
