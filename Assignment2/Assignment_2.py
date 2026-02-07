@@ -2,7 +2,6 @@ import chess
 import random
 from math import inf
 from IPython.display import display, clear_output
-
 def get_minimax_move(b: chess.Board, evaluation, player: bool, ply: int):
     """
     This function chooses the best move for the given board position, evaluation function, player, and ply.
@@ -39,10 +38,10 @@ Determine the max value of the node
 def max_val(board: chess.Board, evaluation, player: bool, ply: int, alpha, beta) -> tuple[float, chess.Move]:
     max_val = float('-inf')
     max_move = None
-    sorted_moves = order_moves(board)
-    for move in sorted_moves:
+    for move in order_moves(board):
+    # for move in board.legal_moves:
         board.push(move)
-        node_val, node_move = value(board, evaluation, not player, ply, alpha, beta)
+        node_val, _ = value(board, evaluation, not player, ply, alpha, beta)
         board.pop()
         if node_val > max_val:
             max_val = node_val
@@ -61,10 +60,10 @@ Determine the min value of the node
 def min_value(board: chess.Board, evaluation, player: bool, ply: int, alpha, beta) -> tuple[float, chess.Move]:
     min_val = float('inf')
     min_move = None
-    ordered = order_moves(board)
-    for move in ordered:
+    for move in order_moves(board):
+    # for move in board.legal_moves:
         board.push(move)
-        node_val, node_move = value(board, evaluation, not player, ply - 1, alpha, beta)
+        node_val, _ = value(board, evaluation, not player, ply - 1, alpha, beta)
         board.pop()
         if node_val < min_val:
             min_val = node_val
@@ -85,7 +84,6 @@ Order the moves in terms of
 * gives the other player a checkmate,
 '''
 def order_moves(board: chess.Board):
-    check_moves = []
     capture_moves = {}
     other_moves = []
     capture_vals = [
@@ -105,9 +103,7 @@ def order_moves(board: chess.Board):
     }
 
     for move in board.legal_moves:
-        if board.gives_check(move):
-            check_moves.append(move)
-        elif board.is_capture(move):
+        if board.is_capture(move):
             from_sq = move.from_square
             piece_attacking = piece_enum[board.piece_at(from_sq).piece_type]
             to_sq = move.to_square
@@ -115,8 +111,8 @@ def order_moves(board: chess.Board):
             capture_moves[move] = capture_vals[piece_attacking][captured_piece]
         else:
             other_moves.append(move)
-    captured_moves_list = dict(sorted(capture_moves.items(), key=lambda item: item[1])).keys()
-    return [*check_moves, *captured_moves_list, *other_moves]
+    captured_moves_list = [mv for mv, _ in sorted(capture_moves.items(), key=lambda item: item[1])]
+    return [*captured_moves_list, *other_moves]
 
 def get_position_score(board: chess.Board, player: bool):   
     """
@@ -140,26 +136,11 @@ def get_position_score(board: chess.Board, player: bool):
         pos_val += get_piece_value(player, piece)
         defended = board.is_attacked_by(player, sq)
         if board.is_attacked_by(not player, sq) and not defended:
-            if is_well_defended(board, piece, player, sq):
-                pos_val += 5
-            else:
-                pos_val -= 9
+            pos_val -= 9
         elif board.is_attacked_by(not player, sq) and defended:
-            pos_val += 2
+            pos_val += 5
         elif board.is_attacked_by(player, sq) and not board.is_attacked_by(not player, sq):
             pos_val += 8
-            # attacking_factor = abs(get_piece_value(player, piece))*2.5
-            # else:
-            #     pos_val -= 9
-        # player is attacking the opposite side & has good attacks factor that in
-        # elif piece.color != player and board.is_attacked_by(player, sq) and not is_well_defended(board, piece, not player, sq):
-        #     pos_val +=  8
-
-        # if board.is_pinned(piece.color, sq):
-        #     if piece.color == player:
-        #         pos_val += 5
-        #     else:
-        #         pos_val -= 5
         
     return pos_val
 
@@ -177,13 +158,6 @@ def get_piece_value(player, piece: chess.Piece) -> int:
         val *= -1
     
     return val
-
-def is_well_defended(board: chess.Board, piece: chess.Piece, player_color: chess.Color, square: chess.Square) -> bool:
-    # other pieces of the same color defending the given piece
-    defenders = board.attackers(piece.color, square)
-    attackers = board.attackers(not piece.color, square)
-    # print(f'Attacked by: {len(attackers)} Defended by: {len(defenders)}')
-    return len(defenders) - len(attackers) >= 1
 
 # testing q5
 # engine = chess.engine.SimpleEngine.popen_uci(r"C:\Users\honey\Desktop\School\Code\cse240_assignments\Assignment2\stockfish-windows-x86-64-avx2.exe") 
