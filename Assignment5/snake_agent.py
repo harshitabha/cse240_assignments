@@ -70,7 +70,7 @@ class SnakeAgent:
         * 2 = no wall to left or right
         '''
         head_x, head_y = state[0], state[1]
-        adj_x_wall = self.elem_adj(head_x, helper.BOARD_LIMIT_MIN, helper.BOARD_LIMIT_MAX)
+        adj_x_wall = self.wall_adj(head_x)
         
         '''
         * det if wall next to head in the y dir
@@ -78,7 +78,7 @@ class SnakeAgent:
         * 1 = wall to bottom
         * 2 = no wall to top or bottom
         '''
-        adj_y_wall = self.elem_adj(head_y, helper.BOARD_LIMIT_MIN, helper.BOARD_LIMIT_MAX)
+        adj_y_wall = self.wall_adj(head_y)
 
 
         # distance in the x dir from the food
@@ -115,19 +115,13 @@ class SnakeAgent:
         return [adj_x_wall, adj_y_wall, food_dir_x, food_dir_y, adj_body_top, adj_body_btm, adj_body_left, adj_body_right]
 
     '''
-    Determine where elem A is in reference to elem B
-    * elem C is optional if there is a different after limit. otherwise set to elem b
-    Return:
-    * 0 if the elem B is right before elem A -> left or above
-    * 1 if the elem B is right after elem A -> right or below
-    * 2 if neither
+    Determine where wall is in reference to the snake head
     '''
-    def elem_adj(self, elem_a, elem_b, elem_c = None):
-        elem_c = elem_b if not elem_c else elem_c
+    def wall_adj(self, head_coord):
         res = 2
-        if elem_a - elem_b == helper.GRID_SIZE: # elem B right before elem A
+        if head_coord - helper.BOARD_LIMIT_MIN == helper.GRID_SIZE: # elem B right before elem A
             res = 0
-        elif elem_b - elem_a == helper.GRID_SIZE: # elem B right after elem A
+        elif helper.BOARD_LIMIT_MIN - head_coord == helper.GRID_SIZE: # elem B right after elem A
             res = 1
         return res
 
@@ -172,14 +166,12 @@ class SnakeAgent:
     def agent_action(self, state, points, dead):
         # print("IN AGENT_ACTION")
         s_index = self.helper_func(state) # save to be referenced when updating the model if traning
-        q_vals = [self.Q[*s_index, action] for action in range(4)]
         # print('in agent action', s_index, q_vals)
-        head_x, head_y, body, food_x, food_y = state
+        head_x, head_y, _, food_x, food_y = state
         dist_from_food = abs(food_x - head_x) + abs(food_y - head_y)
         
         # update the model before saving the new state info if this isn't the first time calling agent_action
         if self._train and self.s:
-            # self.update_model(dist_from_food, dead, points, s_index)
             reward = self.compute_reward(points, dead)
                 
             # reward for moving towards the food
@@ -189,9 +181,9 @@ class SnakeAgent:
                 else:
                     reward -= 1 # didn't move closer
             else:
-                reward -= 10 # don't reward dying
+                reward = -5 # don't reward dying
             
-            # lr = 0.7
+            # update q-table
             lr = self.LPC / (self.LPC + self.N[*self.s, self.a]) # use the previous q-val to help det learning rate
             best_next = 0 if dead else max([self.Q[*s_index, a] for a in range(4)])
             # print(self.Q[self.prev_index])
@@ -220,7 +212,7 @@ class SnakeAgent:
                 else:
                     val = q_val
                 
-                if val > best_val:
+                if val >= best_val:
                     best_val = val
                     best_action = action
 
@@ -239,22 +231,4 @@ class SnakeAgent:
                     best_action = a
         
         return best_action
-        # return random.choices([action, *unoptimal_actions], weights=[90, 10, 10, 10])[0]
-
-    def update_model(self, dist_from_food, dead, points, s_index):
-        reward = self.compute_reward(points, dead)
-            
-        # reward for moving towards the food
-        if not dead:
-            if dist_from_food < self.prev_dist_from_food:
-                reward += 0.1
-            else:
-                reward -= 0.2 # didn't move closer
-        else:
-            reward -= 5 # don't reward dying
-        
-        lr = 0.7
-        lr = self.LPC / (self.LPC + self.N[*self.s, self.a]) # use the previous q-val to help det learning rate
-        best_next = 0 if dead else max([self.Q[*s_index, a] for a in range(4)])
-        self.Q[prev_index] += lr * (reward + self.gamma*best_next - self.Q[prev_index])
 
