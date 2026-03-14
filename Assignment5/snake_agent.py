@@ -83,22 +83,18 @@ class SnakeAgent:
 
         # distance in the x dir from the food
         # same logic as walls
-        # food_dir_x = abs(state[3] - head_x)//40
         food_dir_y, food_dir_x = 2, 2
-        food_x_diff = state[3] - head_x
-        if food_x_diff < 0:
+        food_x, food_y = state[3], state[4]
+        if food_x < head_x:
             food_dir_x = 0 # to left of snake head
-        elif food_x_diff > 0:
+        elif food_x > head_x:
             food_dir_x = 1 # to right of snake head
-        # food_dir_x = self.elem_adj(head_x, state[3])
 
         # distance in the y dir from the food
-        food_y_diff = state[4] - head_x
-        if food_y_diff < 0:
+        if food_y < head_y:
             food_dir_y = 0 # to top of snake head
-        elif food_y_diff > 0:
+        elif food_y > head_y:
             food_dir_y = 1 # to bottom of snake head
-        # food_dir_y = self.elem_adj(head_y, state[4])
 
         # for the next 4, 1 = there is a snake body to dir, 0 = no snake body in that dir
         body = state[2]
