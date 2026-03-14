@@ -48,22 +48,27 @@ class SnakeGame:
         #   AS TRAINING IS HAPPENING THE CODE IN THE LOOP WILL PRINT STATISTICS.
         #   Use self.env.reset() to reset your game after each iteration.
         for game in range(1, self.args.NUM_TRAIN_ITER + 1):
-                print("TRAINING NUMBER : " + str(game))
-            # YOUR CODE HERE
-            # YOUR CODE HERE
-            # YOUR CODE HERE
-            # YOUR CODE HERE
-            # YOUR CODE HERE
-
+            print("TRAINING NUMBER : " + str(game))
+            dead = False
+            points = 0
+            state = self.env.get_state()
+            while not dead:
+                action = self.agent.agent_action(state, points, dead)
+                # print('taking action', action)
+                state, points, dead = self.env.step(action)
+                # self.agent.update_model(action, state, points, dead)
+            
             #UNCOMMENT THE CODE BELOW TO PRINT STATISTICS
-            #if game % self.args.NUM_TO_STAT == 0:
-            #    print(
-            #        "Played games:", len(self.points_results) - NUM_TO_STAT, "-", len(self.points_results), 
-            #        "Calculated points (Average:", sum(self.points_results[-NUM_TO_STAT:])/NUM_TO_STAT,
-            #        "Max points so far:", max(self.points_results[-NUM_TO_STAT:]),
-            #        "Min points so far:", min(self.points_results[-NUM_TO_STAT:]),")",
-            #    )
-            # YOUR CODE HERE
+            self.points_results.append(points) # save points each round for stats
+            if game % self.args.NUM_TO_STAT == 0:
+               print('points res', self.points_results)
+               print(
+                   "Played games:", len(self.points_results) - NUM_TO_STAT, "-", len(self.points_results), 
+                   "Calculated points (Average:", sum(self.points_results[-NUM_TO_STAT:])/NUM_TO_STAT,
+                   "Max points so far:", max(self.points_results[-NUM_TO_STAT:]),
+                   "Min points so far:", min(self.points_results[-NUM_TO_STAT:]),")",
+               )
+            self.env.reset()
         print("Training takes", time.time() - start, "seconds")
         #   THIS LINE WILL SAVE THE MODEL TO THE FILE "model.npy"
         self.agent.save_model()
@@ -85,23 +90,29 @@ class SnakeGame:
         for game in range(1, self.args.NUM_TEST_ITER + 1):
             print("TESTING NUMBER: " + str(game))
                 
+            dead = False
+            points = 0
+            state = self.env.get_state()
+            while not dead:
+                action = self.agent.agent_action(state, points, dead)
+                state, points, dead = self.env.step(action)
             # YOUR CODE HERE
             # YOUR CODE HERE
             # YOUR CODE HERE
-            # YOUR CODE HERE
-            # YOUR CODE HERE
+            points_results.append(points) # ONLY FOR STATS
+            self.env.reset()
 
         #UNCOMMENT THE CODE BELOW TO PRINT STATISTICS
-        #print("Testing takes", time.time() - start, "seconds")
-        #print("Number of Games:", len(points_results))
-        #print("Average Points:", sum(points_results)/len(points_results))
-        #print("Max Points:", max(points_results))
-        #print("Min Points:", min(points_results))
+        print("Testing takes", time.time() - start, "seconds")
+        print("Number of Games:", len(points_results))
+        print("Average Points:", sum(points_results)/len(points_results))
+        print("Max Points:", max(points_results))
+        print("Min Points:", min(points_results))
 
 
     #   This function is the one where the game will be displayed.
     #   This function is already written for you. No changes are necessary
-    #       as long as YOU don't change function names or parameters.
+    #   as long as YOU don't change function names or parameters.
     def show_games(self):
         print("Display Games")
         self.env.display()
@@ -111,9 +122,11 @@ class SnakeGame:
         end = False
         for game in range(1, self.args.NUM_DISP_ITER + 1):
             state = self.env.get_state()
+            # print('got state', state)
             dead = False
             action = self.agent.agent_action(state, 0, dead)
             count = 0
+            print('before while')
             while not dead:
                 count +=1
                 pygame.event.pump()
@@ -124,6 +137,7 @@ class SnakeGame:
                 state, points, dead = self.env.step(action)
                 # Qlearning agent
                 action = self.agent.agent_action(state, points, dead)
+                print('got another action')
             if end:
                 break
             self.env.reset()

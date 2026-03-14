@@ -32,7 +32,13 @@ class BoardEnv:
 
     #   *Returns the current state of the game
     def get_state(self):
-        return self.game.get_state()
+        state = None
+        try:
+            state = self.game.get_state()
+            # print('got state', state)
+        except Exception as e:
+            print(e)
+        return state
 
     #   *Given an action does the action and returns the next state
     def step(self, action):
