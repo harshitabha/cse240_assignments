@@ -48,6 +48,7 @@ class SnakeAgent:
     def reset(self):
         self.points = 0
         self.prev_dist_from_food = float('inf')
+        self.prev_index = None
         self.s = None
         self.a = None
 
@@ -179,12 +180,30 @@ class SnakeAgent:
     def agent_action(self, state, points, dead):
         # print("IN AGENT_ACTION")
         s_index = self.helper_func(state) # save to be referenced when updating the model if traning
+        q_vals = [self.Q[*s_index, action] for action in range(4)]
+        # print('in agent action', s_index, q_vals)
         head_x, head_y, body, food_x, food_y = state
         dist_from_food = abs(food_x - head_x) + abs(food_y - head_y)
         
         # update the model before saving the new state info if this isn't the first time calling agent_action
         if self._train and self.s:
-            self.update_model(dist_from_food, dead, points, s_index)
+            # self.update_model(dist_from_food, dead, points, s_index)
+            reward = self.compute_reward(points, dead)
+                
+            # reward for moving towards the food
+            if not dead:
+                if dist_from_food < self.prev_dist_from_food:
+                    reward += .5
+                else:
+                    reward -= 1 # didn't move closer
+            else:
+                reward -= 10 # don't reward dying
+            
+            # lr = 0.7
+            lr = self.LPC / (self.LPC + self.N[*self.s, self.a]) # use the previous q-val to help det learning rate
+            best_next = 0 if dead else max([self.Q[*s_index, a] for a in range(4)])
+            # print(self.Q[self.prev_index])
+            self.Q[*self.s, self.a] += lr * (reward + self.gamma*best_next - self.Q[*self.s, self.a])
 
         self.points = points
         self.prev_dist_from_food = dist_from_food
@@ -236,16 +255,14 @@ class SnakeAgent:
         # reward for moving towards the food
         if not dead:
             if dist_from_food < self.prev_dist_from_food:
-                reward += 0.2
+                reward += 0.1
             else:
-                reward -= 0.3 # didn't move closer
+                reward -= 0.2 # didn't move closer
         else:
             reward -= 5 # don't reward dying
         
-        prev_index = [*self.s, self.a]
-        print('prev-index', prev_index, self.Q[prev_index], len(self.Q[prev_index]))
         lr = 0.7
-        # lr = self.LPC / (self.LPC + self.N[prev_index]) # use the previous q-val to help det learning rate
+        lr = self.LPC / (self.LPC + self.N[*self.s, self.a]) # use the previous q-val to help det learning rate
         best_next = 0 if dead else max([self.Q[*s_index, a] for a in range(4)])
         self.Q[prev_index] += lr * (reward + self.gamma*best_next - self.Q[prev_index])
 
