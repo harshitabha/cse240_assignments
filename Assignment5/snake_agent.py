@@ -112,10 +112,6 @@ class SnakeAgent:
             if x_diff == -helper.GRID_SIZE:
                 adj_body_left = 1
             
-            # if any any point we are fully surrounded stop looping
-            if adj_body_top and adj_body_btm and adj_body_left and adj_body_right:
-                break
-
         return [adj_x_wall, adj_y_wall, food_dir_x, food_dir_y, adj_body_top, adj_body_btm, adj_body_left, adj_body_right]
 
     '''
