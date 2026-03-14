@@ -56,7 +56,7 @@ class SnakeGame:
                 action = self.agent.agent_action(state, points, dead)
                 # print('taking action', action)
                 state, points, dead = self.env.step(action)
-                # self.agent.update_model(action, state, points, dead)
+                self.agent.update_model(action, state, points, dead)
             
             #UNCOMMENT THE CODE BELOW TO PRINT STATISTICS
             self.points_results.append(points) # save points each round for stats

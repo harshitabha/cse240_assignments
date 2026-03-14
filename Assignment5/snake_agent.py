@@ -49,7 +49,6 @@ class SnakeAgent:
         self.points = 0
         self.s = None
         self.a = None
-        self.q_index = None
 
     #   This is a function you should write. 
     #   Function Helper:IT gets the current state, and based on the 
@@ -178,9 +177,9 @@ class SnakeAgent:
     '''
     def agent_action(self, state, points, dead):
         # print("IN AGENT_ACTION")
-        q_index = self.helper_func(state) # save to be referenced when updating the model if traning
+        self.q_index = self.helper_func(state) # save to be referenced when updating the model if traning
         # print('qindex', self.q_index)
-        q_vals = [self.Q[*q_index, action] for action in range(4)]
+        q_vals = [self.Q[*self.q_index, action] for action in range(4)]
         best_q_val = float('-inf')
         action = None
         allEqual = True # checks if all actions have equal q-vals
@@ -190,29 +189,24 @@ class SnakeAgent:
                 action = a
                 allEqual = False
         
-        if self._train:
-            self.update_model(q_index, points, dead)
-
         # save the state and action for training the agent
-        self.s = q_index
+        self.s = state
         self.a = action
-        self.points = points
         #UNCOMMENT THIS TO RETURN THE REQUIRED ACTION.
         if allEqual:
-            # choose a random action if all have the same q-vals
+            # choose a random action if all of them have the same vals
             return random.choice([x for x in range(4)])
         return action
         # return random.choices([action, *unoptimal_actions], weights=[90, 10, 10, 10])[0]
 
-    def update_model(self, new_q_idx, points, dead):
+    def update_model(self, action, newState, points, dead):
         lr = 0.7
-        if not self.s:
-            q_val = 0
-        else:
-            q_val = self.Q[*self.s, self.a]
-        best_next_val = max([self.Q[*new_q_idx, a] for a in range(4)])
+        q_val = self.Q[*self.q_index, action]
+        new_q_idx = self.helper_func(newState)
+        best_next_val = max([self.Q[*new_q_idx, action] for a in range(4)])
         sample = self.compute_reward(points, dead) + self.gamma*best_next_val
         new_q_val = q_val + lr*(sample - q_val)
-        if self.s:
-            self.Q[*self.s, self.a] = new_q_val
+        
+        self.points = points
+        self.Q[*self.q_index, action] = new_q_val
 
