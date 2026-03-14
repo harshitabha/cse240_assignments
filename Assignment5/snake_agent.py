@@ -47,6 +47,7 @@ class SnakeAgent:
     #   resets the game state
     def reset(self):
         self.points = 0
+        self.prev_dist_from_food = float('inf')
         self.s = None
         self.a = None
 
@@ -177,36 +178,74 @@ class SnakeAgent:
     '''
     def agent_action(self, state, points, dead):
         # print("IN AGENT_ACTION")
-        self.q_index = self.helper_func(state) # save to be referenced when updating the model if traning
-        # print('qindex', self.q_index)
-        q_vals = [self.Q[*self.q_index, action] for action in range(4)]
-        best_q_val = float('-inf')
-        action = None
-        allEqual = True # checks if all actions have equal q-vals
-        for a in range(4):
-            if q_vals[a] > best_q_val:
-                best_q_val = q_vals[a]
-                action = a
-                allEqual = False
+        s_index = self.helper_func(state) # save to be referenced when updating the model if traning
+        head_x, head_y, body, food_x, food_y = state
+        dist_from_food = abs(food_x - head_x) + abs(food_y - head_y)
         
-        # save the state and action for training the agent
-        self.s = state
-        self.a = action
-        #UNCOMMENT THIS TO RETURN THE REQUIRED ACTION.
-        if allEqual:
-            # choose a random action if all of them have the same vals
-            return random.choice([x for x in range(4)])
-        return action
+        # update the model before saving the new state info if this isn't the first time calling agent_action
+        if self._train and self.s:
+            self.update_model(dist_from_food, dead, points, s_index)
+
+        self.points = points
+        self.prev_dist_from_food = dist_from_food
+
+        # if dead no reason to keep playing
+        if dead:
+            self.reset()
+            return None
+        
+        # choosing an action
+        best_action = None # this will get updated!
+        best_val = float('-inf')
+        if self._train:
+            for action in range(4):
+                q_val = self.Q[*s_index, action]
+                n_val = self.N[*s_index, action]
+
+                # explore func: f(u, n) = u + k/n where n is the number of time the state is visited
+                # going to assume Ne is a threshold for if we should explore
+                if n_val < self.Ne:
+                    val = 1
+                else:
+                    val = q_val
+                
+                if val > best_val:
+                    best_val = val
+                    best_action = action
+
+            # only need to update these when training
+            self.s = s_index
+            self.a = best_action
+
+            # update the n-val to show we've explore this state another time
+            self.N[*s_index, best_action] += 1
+        else:
+            # when in testing mode always choose the best action
+            all_q_vals = [self.Q[*s_index, a] for a in range(4)]
+            for a in range(4):
+                if all_q_vals[a] > best_val:
+                    best_val = all_q_vals[a]
+                    best_action = a
+        
+        return best_action
         # return random.choices([action, *unoptimal_actions], weights=[90, 10, 10, 10])[0]
 
-    def update_model(self, action, newState, points, dead):
-        lr = 0.7
-        q_val = self.Q[*self.q_index, action]
-        new_q_idx = self.helper_func(newState)
-        best_next_val = max([self.Q[*new_q_idx, action] for a in range(4)])
-        sample = self.compute_reward(points, dead) + self.gamma*best_next_val
-        new_q_val = q_val + lr*(sample - q_val)
+    def update_model(self, dist_from_food, dead, points, s_index):
+        reward = self.compute_reward(points, dead)
+            
+        # reward for moving towards the food
+        if not dead:
+            if dist_from_food < self.prev_dist_from_food:
+                reward += 0.2
+            else:
+                reward -= 0.3 # didn't move closer
+        else:
+            reward -= 5 # don't reward dying
         
-        self.points = points
-        self.Q[*self.q_index, action] = new_q_val
+        prev_index = [*self.s, self.a]
+        print('prev-index', prev_index, self.Q[prev_index], len(self.Q[prev_index]))
+        lr = 0.7
+        # lr = self.LPC / (self.LPC + self.N[prev_index]) # use the previous q-val to help det learning rate
+        best_next = 0 if dead else max([self.Q[*s_index, a] for a in range(4)])
+        self.Q[prev_index] += lr * (reward + self.gamma*best_next - self.Q[prev_index])
 

@@ -48,6 +48,7 @@ class SnakeGame:
         #   AS TRAINING IS HAPPENING THE CODE IN THE LOOP WILL PRINT STATISTICS.
         #   Use self.env.reset() to reset your game after each iteration.
         for game in range(1, self.args.NUM_TRAIN_ITER + 1):
+        # for game in range(1, 2):
             print("TRAINING NUMBER : " + str(game))
             dead = False
             points = 0
@@ -56,7 +57,7 @@ class SnakeGame:
                 action = self.agent.agent_action(state, points, dead)
                 # print('taking action', action)
                 state, points, dead = self.env.step(action)
-                self.agent.update_model(action, state, points, dead)
+                # self.agent.update_model(action, state, points, dead)
             
             #UNCOMMENT THE CODE BELOW TO PRINT STATISTICS
             self.points_results.append(points) # save points each round for stats
