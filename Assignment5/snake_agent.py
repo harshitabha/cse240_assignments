@@ -99,18 +99,18 @@ class SnakeAgent:
         # for the next 4, 1 = there is a snake body to dir, 0 = no snake body in that dir
         body = state[2]
         adj_body_top, adj_body_btm, adj_body_left, adj_body_right = 0, 0, 0, 0
-        for piece in body:
-            x, y = piece
-            x_diff, y_diff = x - head_x, y - head_y
-            if y_diff == helper.GRID_SIZE:
-                adj_body_top = 1
-            if y_diff == -helper.GRID_SIZE:
-                adj_body_btm = 1
-            
-            if x_diff == helper.GRID_SIZE:
-                adj_body_right = 1
-            if x_diff == -helper.GRID_SIZE:
-                adj_body_left = 1
+        next_top = (head_x, head_y - helper.GRID_SIZE)
+        next_bottom = (head_x, head_y + helper.GRID_SIZE)
+        next_right = (head_x + helper.GRID_SIZE, head_y)
+        next_left = (head_x - helper.GRID_SIZE, head_y)
+        if next_top in body:
+            adj_body_top = 1
+        if next_bottom in body:
+            adj_body_btm = 1
+        if next_left in body:
+            adj_body_left = 1
+        if next_right in body:
+            adj_body_right = 1
             
         return [adj_x_wall, adj_y_wall, food_dir_x, food_dir_y, adj_body_top, adj_body_btm, adj_body_left, adj_body_right]
 
