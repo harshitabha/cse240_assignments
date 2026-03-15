@@ -61,7 +61,7 @@ class SnakeAgent:
     #   This can return a list of variables that help you keep track of
     #   conditions mentioned above.
     #   state=[snake_head_x, snake_head_y, snake_body[], food_x, food_y]
-    def helper_func(self, state):
+    def helper_func(self, state) -> tuple:
         # print("IN helper_func", state)
         '''
         * det if wall next to head in the x dir
@@ -112,7 +112,7 @@ class SnakeAgent:
         if next_right in body:
             adj_body_right = 1
             
-        return [adj_x_wall, adj_y_wall, food_dir_x, food_dir_y, adj_body_top, adj_body_btm, adj_body_left, adj_body_right]
+        return (adj_x_wall, adj_y_wall, food_dir_x, food_dir_y, adj_body_top, adj_body_btm, adj_body_left, adj_body_right)
 
     '''
     Determine where wall is in reference to the snake head
@@ -184,10 +184,11 @@ class SnakeAgent:
                 reward = -5 # don't reward dying
             
             # update q-table
-            lr = self.LPC / (self.LPC + self.N[*self.s, self.a]) # use the previous q-val to help det learning rate
-            best_next = 0 if dead else max([self.Q[*s_index, a] for a in range(4)])
+            index = self.s + (self.a, )
+            lr = self.LPC / (self.LPC + self.N[index]) # use the previous q-val to help det learning rate
+            best_next = 0 if dead else max([self.Q[s_index + (a, )] for a in range(4)])
             # print(self.Q[self.prev_index])
-            self.Q[*self.s, self.a] += lr * (reward + self.gamma*best_next - self.Q[*self.s, self.a])
+            self.Q[index] += lr * (reward + self.gamma*best_next - self.Q[index])
 
         self.points = points
         self.prev_dist_from_food = dist_from_food
@@ -202,8 +203,9 @@ class SnakeAgent:
         best_val = float('-inf')
         if self._train:
             for action in range(4):
-                q_val = self.Q[*s_index, action]
-                n_val = self.N[*s_index, action]
+                index = s_index + (action, )
+                q_val = self.Q[index]
+                n_val = self.N[index]
 
                 # explore func: f(u, n) = u + k/n where n is the number of time the state is visited
                 # going to assume Ne is a threshold for if we should explore
@@ -221,10 +223,10 @@ class SnakeAgent:
             self.a = best_action
 
             # update the n-val to show we've explore this state another time
-            self.N[*s_index, best_action] += 1
+            self.N[s_index + (best_action, )] += 1
         else:
             # when in testing mode always choose the best action
-            all_q_vals = [self.Q[*s_index, a] for a in range(4)]
+            all_q_vals = [self.Q[s_index + (a, )] for a in range(4)]
             for a in range(4):
                 if all_q_vals[a] > best_val:
                     best_val = all_q_vals[a]
